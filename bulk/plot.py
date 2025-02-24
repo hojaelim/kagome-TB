@@ -92,6 +92,7 @@ for d, label in zip(kdist_end, labels):
 
 # --- Set Same Y-Range for Both Plots ---
 y_min, y_max = -4.1, 2.1  # Get min/max energy from band structure
+ax1.set_xlim(k_dist[0], k_dist[-1])
 ax1.set_ylim(y_min, y_max)
 ax2.set_ylim(y_min, y_max)
 
@@ -114,5 +115,6 @@ ax1.text(0, 1.05, "(a)", transform=ax1.transAxes, fontsize=14, fontweight="bold"
 ax2.text(0, 1.05, "(b)", transform=ax2.transAxes, fontsize=14, fontweight="bold")
 
 plt.subplots_adjust(wspace=0.05)  # Reduce horizontal spacing
+plt.tight_layout()
 plt.savefig("band_structure_dos.png", dpi=600)
 plt.show()

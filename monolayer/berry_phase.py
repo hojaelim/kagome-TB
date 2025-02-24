@@ -1,13 +1,36 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-N = 6
+def berry_phase_calculation(eigenvectors):
+    products=[]  
+    for i in range(len(eigenvectors)-1):
+        products.append(np.dot(eigenvectors[i].conj().T, eigenvectors[i+1]))
+    berry_phase = (-np.log(np.prod(products))).imag
+    return berry_phase
 
 def c_function(k_vec, r_vec):
     return np.cos(np.dot(k_vec, r_vec))
 
 def s_function(k_vec, r_vec):
     return np.sin(np.dot(k_vec, r_vec))
+
+def line_2d(kstart, kend, npoints):
+    kstart = np.array(kstart, dtype=float)
+    kend   = np.array(kend,   dtype=float)
+    return [kstart + (kend - kstart)*i/(npoints-1) for i in range(npoints)]
+
+def build_bz_path(corners, Nseg=20):
+    path = line_2d(corners[0], corners[1], Nseg)
+
+    for i in range(len(corners)-2):
+        path += line_2d(corners[i+1], corners[i+2], Nseg)[1:]
+    
+    path += line_2d(corners[-1], corners[0], Nseg)[1:]
+
+    return path
+
+
+N = 6
 
 gm1 = np.array([[0,1,0], [1,0,0], [0,0,0]], dtype=complex)
 gm2 = np.array([[0,0,1], [0,0,0], [1,0,0]], dtype=complex)
@@ -70,38 +93,7 @@ t2 = 0.03
 deps = -0.033
 dt = 0.01
 
-general = hamiltonian(eps, t, t2, deps, dt)
-
-
-def generate_k_path(points, n_points=1000):
-
-    k_vecs = []
-    k_dist = [0.0]  # distance array
-
-    for i in range(len(points) - 1):
-        start = points[i]
-        end   = points[i+1]
-        # interpolate from start -> end
-        for j in range(n_points):
-            alpha = j / float(n_points)
-            kx = (1 - alpha)*start[0] + alpha*end[0]
-            ky = (1 - alpha)*start[1] + alpha*end[1]
-            k_vecs.append((kx, ky))
-
-            if (i > 0 or j > 0):
-                # measure distance from previous point
-                dx = kx - k_vecs[-2][0]
-                dy = ky - k_vecs[-2][1]
-                k_dist.append(k_dist[-1] + np.sqrt(dx*dx + dy*dy))
-
-    # Append the final end point
-    k_vecs.append(points[-1])
-    dx = points[-1][0] - k_vecs[-2][0]
-    dy = points[-1][1] - k_vecs[-2][1]
-    k_dist.append(k_dist[-1] + np.sqrt(dx*dx + dy*dy))
-
-    return k_vecs, k_dist
-
+Nk = 100
 
 b1 = np.pi/3 * np.sqrt(3)/2
 b2 = np.pi/np.sqrt(3) * np.sqrt(3)/2
@@ -112,19 +104,18 @@ K = [0.0, b2*2/3]
 M = [b1, b2] 
 Y = [0, b2]
 
-points_path = [X, Gamma, K, M, X]
-print("Path taken: X -> Γ -> K -> M -> X")
-print(X, "->", Gamma, "->", K, "->", M, "->", X)
+#corners = [X, Gamma, K, M]
+corners = [[-b1,-b2], [-b1,b2], [b1,b2], [b1,-b2]]
 
-# Generate a path
-k_vecs, k_dist = generate_k_path(points_path, n_points=1000)
+general = hamiltonian(eps, t, t2, deps, dt)
 
-all_eigvals = np.zeros((len(k_vecs), N))
+kpath = build_bz_path(corners, Nk)
 
-# Diagonalize at each k
-for i, (kx, ky) in enumerate(k_vecs):
-    k = np.array([kx, ky])
-    # Build Hamiltonian
+all_eigvals = []
+eigvecs_bands = [[] for _ in range(6)]
+vectors_band0 = []
+
+for k in kpath:
     total_matrix = (general.matrix_NN(k) 
                     + general.matrix_NNN(k) 
                     + general.matrix_0() 
@@ -132,43 +123,20 @@ for i, (kx, ky) in enumerate(k_vecs):
                     + general.matrix_staggered(k))
     
     total_matrix = (total_matrix + total_matrix.conj().T) / 2
+    eigvals, eigvecs = np.linalg.eigh(total_matrix)
 
+    sorted_indices = np.argsort(eigvals.real)
+    eigvals = eigvals[sorted_indices]
+    eigvecs = eigvecs[:, sorted_indices]
 
-    eigvals, _ = np.linalg.eigh(total_matrix)
-    eigvals = np.sort(eigvals.real)
-    all_eigvals[i, :] = eigvals
+    band0_vec = eigvecs[:, 0]
+    for i in range(6):
+        eigvecs_bands[i].append(eigvecs[:,i])
 
-with open('kagome_6_band.txt', 'w') as f:
-    for i, (kx, ky) in enumerate(k_vecs):
-        f.write(f"{kx} {ky} {all_eigvals[i][0]} {all_eigvals[i][1]} {all_eigvals[i][2]} {all_eigvals[i][3]} {all_eigvals[i][4]} {all_eigvals[i][5]}\n")
+eigvecs_bands = np.array(eigvecs_bands)
+berry_phases = np.zeros(6)
 
-# Plot each band vs. k-dist
-plt.figure(figsize=(5,5))
-for band_idx in range(N):
-    plt.plot(k_dist, all_eigvals[:, band_idx], color='blue')
-
-plt.ylabel(r"$\epsilon$")
-
-
-def find_kdist_endpoints(points):
-    # Use the same path generation but n_points=1
-    kvecs_end, kdist_end = generate_k_path(points, n_points=1)
-    # kdist_end[0] = 0, kdist_end[1] = distance(Γ->K), etc.
-    return kdist_end
-
-kdist_end = find_kdist_endpoints(points_path)
-
-for d in kdist_end:
-    plt.axvline(x=d, color='k', linestyle='--', linewidth=0.5)
-
-plt.axhline(y=0, color='k', linestyle='--', linewidth=0.5)
-
-plt.ylim(-1,1)
-plt.xlim(np.min(k_dist), np.max(k_dist))
-labels = ["X", "G", "K", "M", "X"]
-
-plt.xticks(kdist_end, labels)
-
-plt.tight_layout()
-plt.show()
-#plt.savefig("kagome_6_bandplot.png")
+for i in range(6):
+    berry_phases[i] = np.abs(berry_phase_calculation(eigvecs_bands[i]))
+    
+print(berry_phases)

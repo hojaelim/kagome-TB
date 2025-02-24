@@ -54,9 +54,12 @@ class hamiltonian:
 a1 = np.array([1, 0])
 a2 = np.array([-1/2, np.sqrt(3)/2])
 a3 = np.array([-1/2, -np.sqrt(3)/2])
+#a1 = np.array([0, 1])
+#a2 = np.array([-np.sqrt(3)/2, -1/2,])
+#a3 = np.array([np.sqrt(3)/2, -1/2])
 
 
-general = hamiltonian(0.01,a1,a2,a3,1)
+general = hamiltonian(0,a1,a2,a3,1)
 
 def generate_k_path(points, n_points=50):
     k_vecs = []
@@ -90,6 +93,8 @@ def generate_k_path(points, n_points=50):
 Gamma = (0.0, 0.0)
 K     = (4*np.pi/3, 0.0)
 M     = (np.pi, np.pi/np.sqrt(3))
+#K     = (0.0, 4*np.pi/3)
+#M     = (-np.pi/np.sqrt(3), np.pi)
 
 # We want to go Γ -> K -> M -> Γ
 points_path = [Gamma, K, M, Gamma]

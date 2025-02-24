@@ -63,42 +63,32 @@ ax.plot(x, y, color='black', zorder=1, label="Rectangular BZ")
 
 
 # Create reciprocal lattice vector arrows (scaled down for display).
-arrow1 = FancyArrowPatch(posA=(0, 0), posB=(hex_b1[0]/1.5, hex_b1[1]/1.5),
-                         arrowstyle='->', mutation_scale=20, linestyle='solid',
-                         linewidth=1, color='b', zorder=3)
-arrow2 = FancyArrowPatch(posA=(0, 0), posB=(hex_b2[0]/1.5, hex_b2[1]/1.5),
-                         arrowstyle='->', mutation_scale=20, linestyle='solid',
-                         linewidth=1, color='b', zorder=3)
-arrow3 = FancyArrowPatch(posA=(0, 0), posB=(b1[0]/1.5, b1[1]/2.25),
+arrow3 = FancyArrowPatch(posA=(0, 0), posB=(b1[0]/1.75, b1[1]/2.5),
                          arrowstyle='->', mutation_scale=20, linestyle='solid',
                          linewidth=1, color='k', zorder=3)
-arrow4 = FancyArrowPatch(posA=(0, 0), posB=(b2[0]/1.5, b2[1]/2.25),
+arrow4 = FancyArrowPatch(posA=(0, 0), posB=(b2[0]/1.75, b2[1]/2.75),
                          arrowstyle='->', mutation_scale=20, linestyle='solid',
                          linewidth=1, color='k', zorder=3)
-ax.add_patch(arrow1)
-ax.add_patch(arrow2)
 ax.add_patch(arrow3)
 ax.add_patch(arrow4)
 
 
 # Arrow labels
-ax.text(hex_b1[0]*0.7, hex_b1[1]*0.7, r'$\mathbf{b}_1$', color='b', fontsize=12, zorder=4)
-ax.text(hex_b2[0]*0.7, hex_b2[1]*0.7, r'$\mathbf{b}_2$', color='b', fontsize=12, zorder=4)
-ax.text(b1[0]*0.6, b1[1] +0.25, r'$\mathbf{b}_1$', color='k', fontsize=12, zorder=4)
-ax.text(b2[0]+0.25, b2[1]*0.425, r'$\mathbf{b}_2$', color='k', fontsize=12, zorder=4)
+ax.text(b1[0]*0.55, b1[1] +0.2, r'$\mathbf{b}_1$', color='k', fontsize=12, zorder=4)
+ax.text(b2[0]+0.1, b2[1]*0.35, r'$\mathbf{b}_2$', color='k', fontsize=12, zorder=4)
 
 # Plot symmetry points and connect them with lines (foreground).
 for i in range(len(sym)-1):
     ax.scatter(sym[i][0], sym[i][1], color='r', zorder=5)
-    ax.text(sym[i][0] - 0.3, sym[i][1] + 0.2, sym_label[i], fontsize=12, zorder=5)
+    ax.text(sym[i][0] - 0.15, sym[i][1] + 0.1, sym_label[i], fontsize=12, zorder=5)
     ax.plot([sym[i][0], sym[i+1][0]], [sym[i][1], sym[i+1][1]], 'r-', linewidth=2, zorder=5)
 
-ax.axhline(y=np.pi/(3), linestyle = 'dotted', color ='k')
-
 # Set plot limits.
-plt.xlim(-3., 3.)
-plt.ylim(-3., 3.)
+plt.xlim(-2.3, 2.3)
+plt.ylim(-2.3, 2.3)
 plt.xlabel('$k_x$')
 plt.ylabel('$k_y$')
+plt.axis('off')
+plt.tight_layout()
 plt.savefig("kagome_structure.png", dpi=600)
 plt.show()

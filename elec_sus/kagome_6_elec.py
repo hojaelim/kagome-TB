@@ -1,6 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+def fd_dist(energy, mu, beta=1000):
+    n = 1/(np.exp((energy-mu)*beta)+1)
+    return n
+
 N = 6
 
 def c_function(k_vec, r_vec):
@@ -170,5 +174,4 @@ labels = ["X", "G", "K", "M", "X"]
 plt.xticks(kdist_end, labels)
 
 plt.tight_layout()
-plt.show()
-#plt.savefig("kagome_6_bandplot.png")
+plt.savefig("kagome_6_bandplot.png")
