@@ -1,3 +1,7 @@
+"""
+Script for calculating dos for bulk kagome lattices
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import gaussian_kde
@@ -60,36 +64,37 @@ Nk = 1000
 
 general = hamiltonian(0,a1,a2,a3,1)
 
-kx_values = np.linspace(-4*np.pi, 4*np.pi, Nk)
-ky_values = np.linspace(-4*np.pi, 4*np.pi, Nk)
-kx, ky = np.meshgrid(kx_values, ky_values)
+kx_values = np.linspace(-2*np.pi, 2*np.pi, Nk)
+ky_values = np.linspace(-2*np.pi, 2*np.pi, Nk)
+kx_values, ky_values = np.meshgrid(kx_values, ky_values)
+k = zip(kx_values.flatten(),ky_values.flatten())
+phi = 0 # TRS Breaking
+onsite_energy = np.array([0.2, 0, -0.2])  # Inversion symmetry breaking
 
-all_eigvals = []
+all_eigvals = np.zeros(((Nk*Nk), N))
 
 # Loop over k-points
-for i in range(Nk):
-    for j in range(Nk):
-        H = general.matrix_0()
-        H += bloch(kx[i, j], ky[i, j], -a2, general.matrix_AB()) + bloch(kx[i, j], ky[i, j], a1, general.matrix_AC()) 
-        H += bloch(kx[i, j], ky[i, j], -a3, general.matrix_BC()) + bloch(kx[i, j], ky[i, j], a2, general.matrix_BA()) 
-        H += bloch(kx[i, j], ky[i, j], -a1, general.matrix_CA()) + bloch(kx[i, j], ky[i, j], a3, general.matrix_CB())
-
-        # Compute eigenvalues (band structure)
-        eigenvalues = np.linalg.eigvalsh(H)
-
-        all_eigvals.extend(eigenvalues)
+for i, (kx, ky) in enumerate(k):
+    total_matrix = general.matrix_0()
+    total_matrix += np.diag(onsite_energy) # Inversion symmetry breaking
+    total_matrix += bloch(kx, ky, -a2, general.matrix_AB())*np.exp(-1j*phi/3) + bloch(kx, ky, a1, general.matrix_AC())*np.exp(1j*phi/3) + bloch(kx, ky, -a3, general.matrix_BC())*np.exp(-1j*phi/3)
+    total_matrix += bloch(kx, ky, a2, general.matrix_BA())*np.exp(1j*phi/3) + bloch(kx, ky, -a1, general.matrix_CA())*np.exp(-1j*phi/3) + bloch(kx, ky, a3, general.matrix_CB())*np.exp(1j*phi/3)
 
 
-# --- Compute DOS ---
-all_energies = np.array(all_eigvals)  # Convert eigenvalues to 1D array
+    # Compute eigenvalues 
+    eigenvalues = np.linalg.eigvalsh(total_matrix)
+    all_eigvals[i, :] = eigenvalues
 
-# Set high resolution for better divergence capture
+
+
+# Compute DOS
+all_energies = np.array(all_eigvals)  
 num_bins = 100000
 energy_min, energy_max = all_energies.min() - 0.1, all_energies.max() + 0.1
 energy_bins = np.linspace(energy_min, energy_max, num_bins)
 
 dos, bin_edges = np.histogram(all_energies, bins=energy_bins, density=True)
 
-with open("dos.txt", "w") as f:
+with open("dos_is.txt", "w") as f:
     for i in range(len(dos)):
         f.write(str(dos[i]) + " " + str(bin_edges[i]) + "\n")

@@ -1,3 +1,7 @@
+"""
+Plot the atom positions in real space
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -61,4 +65,4 @@ plt.axis("off")
 plt.tight_layout()
 
 plt.show()
-#plt.savefig("r_location.png", dpi=600)
+plt.savefig("r_location.png", dpi=600)

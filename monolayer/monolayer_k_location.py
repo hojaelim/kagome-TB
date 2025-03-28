@@ -1,12 +1,13 @@
+"""
+Plot the high symmetry points on the rectangular and hexagonal BZ, with vectors.
+"""
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyArrowPatch
 
-
+# Define the rectangular BZ corners.
 kx = np.pi/(2*np.sqrt(3))
 ky = np.pi/2
-
-# Define the rectangular BZ corners.
 corners = [
     ( kx,  ky),
     ( kx,  -ky),
@@ -32,6 +33,7 @@ a2 = np.array([0,1])
 
 rotation = np.array([[0, -1], [1, 0]])
 
+# Create reciprocal lattice vectors
 b1 = 2*np.pi * np.dot(rotation, a2)/(np.dot(a1, np.dot(rotation, a2)))
 b2 = 2*np.pi * np.dot(rotation, a1)/(np.dot(a2, np.dot(rotation, a1)))
 
@@ -58,11 +60,12 @@ fig, ax = plt.subplots(figsize=(5,5))
 
 # Plot hexagonal BZ
 ax.plot(hex_x, hex_y, color='blue', zorder=2, label="Hexagonal BZ", linestyle='dashed')
-# Plot rectangular BZ (background)
+
+# Plot rectangular BZ 
 ax.plot(x, y, color='black', zorder=1, label="Rectangular BZ")
 
 
-# Create reciprocal lattice vector arrows (scaled down for display).
+# Create reciprocal lattice vector arrows
 arrow3 = FancyArrowPatch(posA=(0, 0), posB=(b1[0]/1.75, b1[1]/2.5),
                          arrowstyle='->', mutation_scale=20, linestyle='solid',
                          linewidth=1, color='k', zorder=3)
@@ -77,7 +80,7 @@ ax.add_patch(arrow4)
 ax.text(b1[0]*0.55, b1[1] +0.2, r'$\mathbf{b}_1$', color='k', fontsize=12, zorder=4)
 ax.text(b2[0]+0.1, b2[1]*0.35, r'$\mathbf{b}_2$', color='k', fontsize=12, zorder=4)
 
-# Plot symmetry points and connect them with lines (foreground).
+# Plot symmetry points and connect them with lines
 for i in range(len(sym)-1):
     ax.scatter(sym[i][0], sym[i][1], color='r', zorder=5)
     ax.text(sym[i][0] - 0.15, sym[i][1] + 0.1, sym_label[i], fontsize=12, zorder=5)

@@ -1,4 +1,9 @@
+"""
+Bandplot for bulk
+"""
+
 import numpy as np
+import matplotlib.pyplot as plt
 
 N = 3
 
@@ -7,12 +12,13 @@ def bloch(kx, ky, R, matrix):
     return matrix
 
 class hamiltonian:
-    def __init__(self, E, a1, a2, a3, t):
+    def __init__(self, E, a1, a2, a3, t, t2=0.5):
         self.E = E
         self.a1 = a1
         self.a2 = a2
         self.a3 = a3
         self.t = -t
+        self.t2 = -t2
         
     def matrix_0(self):
         matrix = np.zeros((N, N), dtype=complex)
@@ -54,10 +60,6 @@ class hamiltonian:
 a1 = np.array([1, 0])
 a2 = np.array([-1/2, np.sqrt(3)/2])
 a3 = np.array([-1/2, -np.sqrt(3)/2])
-#a1 = np.array([0, 1])
-#a2 = np.array([-np.sqrt(3)/2, -1/2,])
-#a3 = np.array([np.sqrt(3)/2, -1/2])
-
 
 general = hamiltonian(0,a1,a2,a3,1)
 
@@ -68,7 +70,7 @@ def generate_k_path(points, n_points=50):
     for i in range(len(points) - 1):
         start = points[i]
         end   = points[i+1]
-        # interpolate from start -> end
+
         for j in range(n_points):
             alpha = j / float(n_points)
             kx = (1 - alpha)*start[0] + alpha*end[0]
@@ -76,12 +78,11 @@ def generate_k_path(points, n_points=50):
             k_vecs.append((kx, ky))
 
             if (i > 0 or j > 0):
-                # measure distance from previous point
+
                 dx = kx - k_vecs[-2][0]
                 dy = ky - k_vecs[-2][1]
                 k_dist.append(k_dist[-1] + np.sqrt(dx*dx + dy*dy))
 
-    # Append the final end point
     k_vecs.append(points[-1])
     dx = points[-1][0] - k_vecs[-2][0]
     dy = points[-1][1] - k_vecs[-2][1]
@@ -89,34 +90,27 @@ def generate_k_path(points, n_points=50):
 
     return k_vecs, k_dist
 
-# Define your high-symmetry points
+
 Gamma = (0.0, 0.0)
 K     = (4*np.pi/3, 0.0)
 M     = (np.pi, np.pi/np.sqrt(3))
-#K     = (0.0, 4*np.pi/3)
-#M     = (-np.pi/np.sqrt(3), np.pi)
 
-# We want to go Γ -> K -> M -> Γ
 points_path = [Gamma, K, M, Gamma]
 
-# Generate a path
 k_vecs, k_dist = generate_k_path(points_path, n_points=100)
 
-# Prepare arrays to store the 6 eigenvalues at each k
-N_BANDS = N  # = 6 in your code
-all_eigvals = np.zeros((len(k_vecs), N_BANDS))
-delta_epsilon = 0.01  # Adjust this value based on the paper
-onsite_energy = np.array([delta_epsilon, -delta_epsilon, delta_epsilon])  # A sublattices affected
-delta_t = 0.01  # Adjust this value to control gap size
+all_eigvals = np.zeros((len(k_vecs), N))
+onsite_energy = np.array([0.2, 0, -0.2])
+phi =  0
 
 for i, (kx, ky) in enumerate(k_vecs):
     k = np.array([kx, ky])
 
     total_matrix = general.matrix_0()
-    total_matrix += np.diag(onsite_energy)
-    total_matrix += bloch(kx, ky, -a2, general.matrix_AB()) + bloch(kx, ky, a1, general.matrix_AC()) + bloch(kx, ky, -a3, general.matrix_BC())
-    total_matrix += bloch(kx, ky, a2, general.matrix_BA()) + bloch(kx, ky, -a1, general.matrix_CA()) + bloch(kx, ky, a3, general.matrix_CB())
-    total_matrix += delta_t * bloch(kx, ky, a2, general.matrix_BC()) - delta_t * bloch(kx, ky, -a2, general.matrix_CB())
+    total_matrix += np.diag(onsite_energy) # Inversion symmetry breaking
+    total_matrix += bloch(kx, ky, -a2, general.matrix_AB())*np.exp(-1j*phi/3) + bloch(kx, ky, a1, general.matrix_AC())*np.exp(1j*phi/3) + bloch(kx, ky, -a3, general.matrix_BC())*np.exp(-1j*phi/3)
+    total_matrix += bloch(kx, ky, a2, general.matrix_BA())*np.exp(1j*phi/3) + bloch(kx, ky, -a1, general.matrix_CA())*np.exp(-1j*phi/3) + bloch(kx, ky, a3, general.matrix_CB())*np.exp(1j*phi/3)
+   
 
     total_matrix = (total_matrix + total_matrix.conj().T) / 2
 
@@ -125,6 +119,36 @@ for i, (kx, ky) in enumerate(k_vecs):
     eigvals = np.sort(eigvals.real)
     all_eigvals[i, :] = eigvals
 
-with open('kagome_band.txt', 'w') as f:
+
+with open('kagome_band_is.txt', 'w') as f:
     for i, (kx, ky) in enumerate(k_vecs):
         f.write(f"{kx} {ky} {all_eigvals[i][0]} {all_eigvals[i][1]} {all_eigvals[i][2]}\n")
+
+
+def find_kdist_endpoints(points):
+    kvecs_end, kdist_end = generate_k_path(points, n_points=1)
+    return kdist_end
+
+kdist_end = find_kdist_endpoints(points_path)
+
+fig, ax = plt.subplots(figsize=(5, 5))
+for band_idx in range(3):
+    ax.plot(k_dist, all_eigvals[:, band_idx], color='blue')
+
+for d in kdist_end:
+    ax.axvline(x=d, color='k', linestyle='--', linewidth=0.5)
+
+ax.set_xticks([]) 
+ax.set_xlabel("") 
+
+
+labels = ["Γ", "K", "M", "Γ"]
+for d, label in zip(kdist_end, labels):
+    ax.text(d, ax.get_ylim()[0] - 0.1, label, ha='center', va='top', fontsize=12)
+
+
+y_min, y_max = -4.1, 2.1  
+ax.set_xlim(k_dist[0], k_dist[-1])
+#ax.set_ylim(y_min, y_max)
+plt.savefig("band_is.png")
+plt.show()

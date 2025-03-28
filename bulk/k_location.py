@@ -1,3 +1,7 @@
+"""
+Plot the BZ and high symmetry points in k-space.
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyArrowPatch
